@@ -2,7 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const mongoSanitize = require("express-mongo-sanitize");
 const hpp = require("hpp");
 
 const app = express();
@@ -13,7 +12,7 @@ app.use(helmet());
 // CORS configuration
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
@@ -24,16 +23,13 @@ app.use(
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 
-// Data sanitization against NoSQL query injection
-app.use(mongoSanitize());
-
 // Prevent HTTP Parameter Pollution
 app.use(hpp());
 
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 100,
   message: {
     success: false,
     message: "Too many requests from this IP, please try again later",
@@ -41,12 +37,13 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use("/api/", limiter);
+
+app.use("/api", limiter);
 
 // Stricter rate limit for auth endpoints
 const authLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // 10 attempts per hour
+  max: 10,
   message: {
     success: false,
     message: "Too many authentication attempts, please try again later",
@@ -66,7 +63,15 @@ app.use("/api/health", healthRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/opportunities", opportunityRoutes);
 
-// Health check endpoint (also useful for load balancers)
+// Root route
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "API is running successfully",
+  });
+});
+
+// Health check endpoint
 app.get("/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -77,7 +82,7 @@ app.get("/health", (req, res) => {
 });
 
 // Handle undefined routes
-app.all("*", (req, res) => {
+app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: `Cannot ${req.method} ${req.originalUrl}`,
@@ -85,7 +90,7 @@ app.all("*", (req, res) => {
   });
 });
 
-// Global error handler (must be last)
+// Global error handler
 app.use(errorHandler);
 
 module.exports = app;

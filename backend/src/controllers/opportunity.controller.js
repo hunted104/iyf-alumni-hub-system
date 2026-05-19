@@ -1,4 +1,4 @@
-const Opportunity = require("../models/opportunity.model");
+const Opportunity = require("../models/opportunity.models");
 const mongoose = require("mongoose");
 const { AppError } = require("../middleware/error.middleware");
 
