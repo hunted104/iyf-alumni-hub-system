@@ -1,23 +1,21 @@
 require("dotenv").config();
 
-const app = require("./app");
-const connectDB = require("./config/db");
-
-connectDB().then(() => {
-  const PORT = process.env.PORT || 5000;
-
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-});
+const app = require("./src/app");
+const connectDB = require("./src/config/db");
 
 const PORT = process.env.PORT || 5000;
 
-const server = app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const start = async () => {
+  try {
+    await connectDB();
 
-process.on("unhandledRejection", (err) => {
-  console.error("Unhandled Rejection:", err.message);
-  server.close(() => process.exit(1));
-});
+    app.listen(PORT, () => {
+      console.log("Server running on", PORT);
+    });
+  } catch (err) {
+    console.error("Startup failed:", err);
+    process.exit(1);
+  }
+};
+
+start();
