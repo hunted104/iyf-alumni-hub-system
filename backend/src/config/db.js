@@ -2,22 +2,20 @@ const mongoose = require("mongoose");
 
 const connectDB = async () => {
   try {
-    console.log("Attempting MongoDB connection...");
-
-    const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/iyf-alumni-connect";
+    console.log("Connecting MongoDB...");
 
     if (!process.env.MONGO_URI) {
-      console.warn("Warning: MONGO_URI not set. Falling back to mongodb://localhost:27017/iyf-alumni-connect");
+      throw new Error("MONGO_URI is missing in environment variables");
     }
 
-    await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 10000, // 10 seconds hard fail
-    });
+    const conn = await mongoose.connect(process.env.MONGO_URI);
 
-    console.log("MongoDB Connected successfully");
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error("MongoDB connection FAILED:"); for 
+    console.error("MongoDB connection failed:");
     console.error(error.message);
+
+    // IMPORTANT: do NOT silently fail
     process.exit(1);
   }
 };
